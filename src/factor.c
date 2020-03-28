@@ -102,6 +102,7 @@
 
 
 #include <config.h>
+#undef HAVE_GMP
 #include <getopt.h>
 #include <stdio.h>
 #ifndef PREV
@@ -2389,8 +2390,13 @@ static void
 lbuf_flush (void)
 {
   size_t size = lbuf.end - lbuf.buf;
+#if 0
   if (full_write (STDOUT_FILENO, lbuf.buf, size) != size)
     die (EXIT_FAILURE, errno, "%s", _("write error"));
+#else
+#pragma GCC diagnostic ignored "-Wunused-result"
+  write (STDOUT_FILENO, lbuf.buf, size);
+#endif
   lbuf.end = lbuf.buf;
 }
 
