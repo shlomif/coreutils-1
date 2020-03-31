@@ -2388,6 +2388,7 @@ lbuf_flush (void)
   lbuf.end = lbuf.buf;
 }
 
+#ifdef PREV
 /* Add a character C to LBUF and if it's a newline
    and enough bytes are already buffered,
    then write atomically to standard output.  */
@@ -2427,7 +2428,9 @@ lbuf_putc (char c)
         }
     }
 }
+#endif
 
+#ifdef PREV
 /* Buffer an int to the internal LBUF.  */
 static void
 lbuf_putint (uintmax_t i, size_t min_width)
@@ -2443,7 +2446,9 @@ lbuf_putint (uintmax_t i, size_t min_width)
   memcpy (lbuf.end, umaxstr, width);
   lbuf.end += width;
 }
+#endif
 
+#ifdef PREV
 static void
 print_uintmaxes (uintmax_t t1, uintmax_t t0)
 {
@@ -2462,6 +2467,9 @@ print_uintmaxes (uintmax_t t1, uintmax_t t0)
       lbuf_putint (r, 9);
     }
 }
+#endif
+
+static uintmax_t global_counts[64] = {0};
 
 /* Single-precision factoring */
 static void
@@ -2469,25 +2477,41 @@ print_factors_single (uintmax_t t1, uintmax_t t0)
 {
   struct factors factors;
 
+#ifdef PREV
   print_uintmaxes (t1, t0);
   lbuf_putc (':');
+#endif
 
   factor (t1, t0, &factors);
 
+  uintmax_t ret = 0;
   for (unsigned int j = 0; j < factors.nfactors; j++)
+  {
+    ret += factors.e[j];
+#ifdef PREV
     for (unsigned int k = 0; k < factors.e[j]; k++)
       {
         lbuf_putc (' ');
         print_uintmaxes (0, factors.p[j]);
       }
+#endif
+  }
 
   if (factors.plarge[1])
     {
+#ifdef PREV
       lbuf_putc (' ');
       print_uintmaxes (factors.plarge[1], factors.plarge[0]);
+#else
+      ++ret;
+#endif
     }
 
+#ifdef PREV
   lbuf_putc ('\n');
+#else
+  ++global_counts[ret];
+#endif
 }
 
 /* Emit the factors of the indicated number.  If we have the option of using
@@ -2655,6 +2679,14 @@ main (int argc, char **argv)
                   100.0 * f, 100.0 * acc_f);
         }
     }
+#endif
+#ifndef PREV
+  uintmax_t s=0;
+  for (size_t i = 0; i < sizeof(global_counts) / sizeof(global_counts[0]); ++i)
+  {
+    s += global_counts[i] << i;
+  }
+  printf("%llu\n", (unsigned long long)s);
 #endif
 
   return ok ? EXIT_SUCCESS : EXIT_FAILURE;
