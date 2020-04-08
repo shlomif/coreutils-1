@@ -104,6 +104,12 @@
 #include <config.h>
 #include <getopt.h>
 #include <stdio.h>
+#ifndef PREV
+#if HAVE_GMP
+#undef HAVE_GMP
+#define HAVE_GMP 0
+#endif
+#endif
 #if HAVE_GMP
 # include <gmp.h>
 # if !HAVE_DECL_MPZ_INITS
