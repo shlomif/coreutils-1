@@ -2534,7 +2534,11 @@ print_factors_single (uintmax_t t1, uintmax_t t0)
    For longer numbers, we prefer the MP algorithm even if the native algorithm
    has enough digits, because the algorithm is better.  The turnover point
    depends on the value.  */
+#ifndef PREV
+static inline void
+#else
 static bool
+#endif
 print_factors (const char *input)
 {
   uintmax_t t1, t0;
@@ -2568,9 +2572,10 @@ print_factors (const char *input)
 #else
       strto2uintmax (&t1, &t0, input);
       print_factors_single (t1, t0);
-      return true;
+      return;
 #endif
 
+#ifdef PREV
 #if HAVE_GMP
   devmsg ("[using arbitrary-precision arithmetic] ");
   mpz_t t;
@@ -2593,6 +2598,7 @@ print_factors (const char *input)
 #else
   error (0, 0, _("%s is too large"), quote (input));
   return false;
+#endif
 #endif
 }
 
@@ -2644,19 +2650,39 @@ do_stdin (void)
 
 #else
 
-static bool
+
+static inline void print_state(void)
+{
+  uintmax_t s=0;
+          for (size_t i = 0; i < sizeof(global_counts) / sizeof(global_counts[0]); ++i)
+          {
+              printf(" %zu=[%lu]", i, global_counts[i]);
+    s += global_counts[i] << i;
+          }
+          printf("\n");
+  printf("%llu\n", (unsigned long long)s);
+          fflush(stdout);
+}
+
+static inline void
 do_stdin (void)
 {
-  bool ok = true;
-
   char buffer[40] = {0};
   char * startstr = &buffer[38];
-  startstr[0] = '0';
-  char * endstr = startstr;
+  startstr[0] = '1';
+  char * const endstr = startstr;
 
-  for (unsigned long l = 1; l<= 100000000UL; ++l)
+  char * endvar = getenv("E");
+  char * startvar = getenv("S");
+  const unsigned long end = endvar ? atoll(endvar): 10000000000000UL;
+  const unsigned long start = startvar ? atoll(startvar): 1;
+  const unsigned long step = 100000000UL;
+  unsigned long milestone = start + step;
+  milestone -= (milestone % step);
+
+  for (unsigned long l = start; l<= end; ++l)
     {
-      ok &= print_factors (startstr);
+      print_factors (startstr);
       char * inc = endstr;
       while (inc[0] == '9')
       {
@@ -2671,9 +2697,15 @@ do_stdin (void)
       {
           ++(inc[0]);
       }
+      if (l == milestone)
+      {
+          printf("%lu -> %lu :", start, l);
+          print_state();
+          milestone += step;
+      }
     }
 
-  return ok;
+  return;
 }
 #endif
 
@@ -2681,7 +2713,7 @@ int
 main (int argc, char **argv)
 {
 #ifndef ENABLE_STDIN_READ
-    bool ok = do_stdin();
+    do_stdin();
 #endif
 #ifdef ENABLE_STDIN_READ
   initialize_main (&argc, &argv);
@@ -2743,13 +2775,10 @@ main (int argc, char **argv)
 #endif
 #endif
 #ifndef PREV
-  uintmax_t s=0;
-  for (size_t i = 0; i < sizeof(global_counts) / sizeof(global_counts[0]); ++i)
-  {
-    s += global_counts[i] << i;
-  }
-  printf("%llu\n", (unsigned long long)s);
-#endif
+  print_state();
+  return 0;
+#else
 
   return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+#endif
 }
