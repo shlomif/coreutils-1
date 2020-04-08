@@ -2649,12 +2649,28 @@ do_stdin (void)
 {
   bool ok = true;
 
-  char buffer[40];
+  char buffer[40] = {0};
+  char * startstr = &buffer[38];
+  startstr[0] = '0';
+  char * endstr = startstr;
 
   for (unsigned long l = 1; l<= 100000000UL; ++l)
     {
-        sprintf(buffer, "%lu", l);
-      ok &= print_factors (buffer);
+      ok &= print_factors (startstr);
+      char * inc = endstr;
+      while (inc[0] == '9')
+      {
+          *(inc--) = '0';
+      }
+      if (! inc[0])
+      {
+          inc[0] = '1';
+          startstr = inc;
+      }
+      else
+      {
+          ++(inc[0]);
+      }
     }
 
   return ok;
