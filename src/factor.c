@@ -2571,6 +2571,7 @@ print_factors (const char *input)
     }
 #else
       strto2uintmax (&t1, &t0, input);
+      // printf("%lu %lu\n", t1, t0);
       print_factors_single (t1, t0);
       return;
 #endif
@@ -2667,10 +2668,12 @@ static inline void print_state(void)
 static inline void
 do_stdin (void)
 {
+#if 0
   char buffer[40] = {0};
   char * startstr = &buffer[38];
   startstr[0] = '1';
   char * const endstr = startstr;
+#endif
 
   char * endvar = getenv("E");
   char * startvar = getenv("S");
@@ -2682,6 +2685,9 @@ do_stdin (void)
 
   for (unsigned long l = start; l<= end; ++l)
     {
+#if 1
+      print_factors_single(0, l);
+#else
       print_factors (startstr);
       char * inc = endstr;
       while (inc[0] == '9')
@@ -2697,6 +2703,7 @@ do_stdin (void)
       {
           ++(inc[0]);
       }
+#endif
       if (l == milestone)
       {
           printf("%lu -> %lu :", start, l);
