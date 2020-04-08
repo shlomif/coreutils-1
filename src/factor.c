@@ -2677,8 +2677,8 @@ do_stdin (void)
 
   char * endvar = getenv("E");
   char * startvar = getenv("S");
-  const unsigned long end = endvar ? atoll(endvar): 10000000000000UL;
-  const unsigned long start = startvar ? atoll(startvar): 1;
+  const unsigned long end = endvar ? atoll(endvar) : (1000UL * 1000 * 1000 * 1000 * 100);
+  const unsigned long start = startvar ? atoll(startvar) : 1;
   const unsigned long step = 100000000UL;
   unsigned long milestone = start + step;
   milestone -= (milestone % step);
