@@ -130,6 +130,7 @@
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "factor"
 
+#ifdef ENABLE_STDIN_READ
 #define AUTHORS \
   proper_name ("Paul Rubin"),                                           \
   proper_name_utf8 ("Torbjorn Granlund", "Torbj\303\266rn Granlund"),   \
@@ -137,6 +138,7 @@
 
 /* Token delimiters when reading from a file.  */
 #define DELIM "\n\t "
+#endif
 
 #ifndef USE_LONGLONG_H
 /* With the way we use longlong.h, it's only safe to use
@@ -236,6 +238,7 @@ enum
   DEV_DEBUG_OPTION = CHAR_MAX + 1
 };
 
+#ifdef ENABLE_STDIN_READ
 static struct option const long_options[] =
 {
   {"-debug", no_argument, NULL, DEV_DEBUG_OPTION},
@@ -243,6 +246,7 @@ static struct option const long_options[] =
   {GETOPT_VERSION_OPTION_DECL},
   {NULL, 0, NULL, 0}
 };
+#endif
 
 struct factors
 {
@@ -708,9 +712,11 @@ static const struct primes_dtab primes_dtab[] = {
    the integers used to generate primes.h.  */
 verify (W <= WIDE_UINT_BITS);
 
+#ifdef ENABLE_STDIN_READ
 /* debugging for developers.  Enables devmsg().
    This flag is used only in the GMP code.  */
 static bool dev_debug = false;
+#endif
 
 /* Prove primality or run probabilistic tests.  */
 static bool flag_prove_primality = PROVE_PRIMALITY;
@@ -2357,6 +2363,7 @@ strto2uintmax (uintmax_t *hip, uintmax_t *lop, const char *s)
   return err;
 }
 
+#ifdef ENABLE_STDIN_READ
 /* Structure and routines for buffering and outputting full lines,
    to support parallel operation efficiently.  */
 static struct lbuf_
@@ -2394,7 +2401,9 @@ lbuf_flush (void)
   lbuf.end = lbuf.buf;
 }
 
-#ifdef PREV
+#endif
+
+#ifdef ENABLE_STDIN_READ
 /* Add a character C to LBUF and if it's a newline
    and enough bytes are already buffered,
    then write atomically to standard output.  */
@@ -2534,8 +2543,9 @@ print_factors (const char *input)
      print an error message.  The 2nd condition checks that the most
      significant bit of the two-word number is clear, in a typesize neutral
      way.  */
-  strtol_error err = strto2uintmax (&t1, &t0, input);
 
+#ifdef ENABLE_STDIN_READ
+  strtol_error err = strto2uintmax (&t1, &t0, input);
   switch (err)
     {
     case LONGINT_OK:
@@ -2555,6 +2565,11 @@ print_factors (const char *input)
       error (0, 0, _("%s is not a valid positive integer"), quote (input));
       return false;
     }
+#else
+      strto2uintmax (&t1, &t0, input);
+      print_factors_single (t1, t0);
+      return true;
+#endif
 
 #if HAVE_GMP
   devmsg ("[using arbitrary-precision arithmetic] ");
@@ -2605,6 +2620,7 @@ are specified on the command line, read them from standard input.\n\
   exit (status);
 }
 
+#ifdef ENABLE_STDIN_READ
 static bool
 do_stdin (void)
 {
@@ -2626,9 +2642,32 @@ do_stdin (void)
   return ok;
 }
 
+#else
+
+static bool
+do_stdin (void)
+{
+  bool ok = true;
+
+  char buffer[40];
+
+  for (unsigned long l = 1; l<= 100000000UL; ++l)
+    {
+        sprintf(buffer, "%lu", l);
+      ok &= print_factors (buffer);
+    }
+
+  return ok;
+}
+#endif
+
 int
 main (int argc, char **argv)
 {
+#ifndef ENABLE_STDIN_READ
+    bool ok = do_stdin();
+#endif
+#ifdef ENABLE_STDIN_READ
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
   setlocale (LC_ALL, "");
@@ -2685,6 +2724,7 @@ main (int argc, char **argv)
                   100.0 * f, 100.0 * acc_f);
         }
     }
+#endif
 #endif
 #ifndef PREV
   uintmax_t s=0;
